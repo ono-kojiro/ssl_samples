@@ -1,0 +1,38 @@
+[General]
+Name=389 Directory Suite
+Components=slapd
+
+FullMachineName= localhost.localdomain
+SuiteSpotUserID= dirsrv
+ServerRoot= /usr/lib64/389-ds
+
+[slapd]
+Name= 389 Directory Server
+InstanceNamePrefix= Directory Server
+NickName= slapd
+Version= 1.4.2.9
+BaseVersion= 1.2
+Compatible= 1.0
+BuildNumber= 2020.076.197
+Description= 389 Directory Server
+ProductName=Directory Server
+Vendor= 389 Project
+
+Expires= 0
+Security= domestic
+IsDirLite=false
+PreInstall= ns-config
+PostInstall= bin/slapd/admin/bin/ns-update
+PreUninstall= bin/slapd/admin/bin/uninstall
+PostUninstall=
+Checked=True
+Mandatory=False
+IsLdap=True
+
+ServerPort=389
+ServerIdetifier= localhost
+Suffix= dc=my-domain,dc=com
+RootDN= cn=Manager,dc=my-domain,dc=com
+RootDNPwd= secret389
+
+
