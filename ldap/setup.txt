@@ -1,0 +1,252 @@
+$ sudo passwd root
+
+$ sudo vi /etc/ssh/sshd_config
+PermitRootLogin yes
+
+$ sudo systemctl restart sshd
+
+$ exit
+
+login as root.
+
+# userdel dummy
+
+# apt -y install slapd ldap-utils
+Configuring slapd
+Administrator password: 
+
+# apt -y install samba
+
+# cd /etc/ldap
+# cp /usr/share/doc/samba/examples/LDAP/samba.schema.gz .
+# gunzip samba.schema.gz
+# mv samba.schema /etc/ldap/schema/
+
+# apt -y install libnss3-tools
+# which certutil
+/usr/bin/certutil
+
+
+
+
+rm -rf /etc/ssl/ca
+mkdir -p /etc/ssl/ca
+certutil -N -d /etc/ssl/ca --empty-password
+dd if=/dev/urandom of=/tmp/noise.bin bs=1 count=2048 > /dev/null 2>&1
+certutil -S -x -d /etc/ssl/ca -z /tmp/noise.bin \
+  -n MyCA -s "cn=MyCA" -t "CT,C,C" -k rsa -g 2048 -Z SHA256 -2
+certutil -L -d /etc/ssl/ca -n MyCA -a > /etc/ssl/certs/cacert.crt
+
+
+rm -rf /etc/ssl/server
+mkdir /etc/ssl/server
+certutil -N -d /etc/ssl/server --empty-password
+dd if=/dev/urandom of=/tmp/noise.bin bs=1 count=2048 > /dev/null 2>&1
+certutil -R -s "cn=MyServer" -z /tmp/noise.bin \
+        -o /etc/ssl/server/server.csr -a -d /etc/ssl/server
+
+
+certutil -C \
+        -d /etc/ssl/ca \
+        -c MyCA -i /etc/ssl/server/server.csr \
+        -a -o /etc/ssl/server/server.crt \
+        --extSAN dns:localhost,ip:192.168.56.178,ip:127.0.0.1 \
+        -v 120
+
+
+certutil -A -d /etc/ssl/server \
+        -n MyServer -t ",," -i /etc/ssl/server/server.crt
+pk12util \
+        -d /etc/ssl/server \
+        -n MyServer \
+        -o /etc/ssl/server/server.p12
+openssl pkcs12 \
+        -in /etc/ssl/server/server.p12 \
+        -nocerts \
+        -out /etc/ssl/server/server.key \
+        -nodes
+
+
+
+# cp /etc/ssl/server/server.crt /etc/ssl/certs/server.crt
+# cp /etc/ssl/server/server.key /etc/ssl/private/server.key
+
+
+# apt -y install apache2
+# vi /etc/apache2/sites-available/default-ssl.conf
+                SSLCertificateFile      /etc/ssl/certs/server.crt
+                SSLCertificateKeyFile /etc/ssl/private/server.key
+
+# a2ensite default-ssl
+# a2enmod ssl
+# systemctl restart apache2
+
+(copy /etc/ssl/ca/cacert.crt to client PC and install it)
+
+
+==============================================================
+
+# mkdir /etc/ldap/certs
+# cp /etc/ssl/server/server.crt  /etc/ldap/certs/
+# cp /etc/ssl/private/server.key /etc/ldap/certs/
+# chown openldap.openldap /etc/ldap/certs/*
+
+# dpkg-reconfigure slapd
+
+# vi /etc/ldap/suffix.ldif
+dn: olcDatabase={1}mdb,cn=config
+changetype: modify
+replace: olcSuffix
+olcSuffix: dc=example,dc=com
+
+# ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /etc/ldap/suffix.ldif
+# ldapsearch -Q -Y EXTERNAL -H ldapi:/// -LLL -b "olcDatabase={1}mdb,cn=config" olcSuffix
+
+# vi /etc/ldap/rootdn.ldif
+dn: olcDatabase={1}mdb,cn=config
+changetype: modify
+replace: olcRootDN
+olcRootDN: cn=Manager,dc=example,dc=com
+
+# ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /etc/ldap/rootdn.ldif
+# ldapsearch -Q -Y EXTERNAL -H ldapi:/// -LLL -b "olcDatabase={1}mdb,cn=config" olcRootDN
+
+
+
+
+# vi create_schema_ldif.sh
+
+# sh create_schema_ldif.sh samba
+
+# ldapadd -Q -Y EXTERNAL -H ldapi:/// -f samba.ldif
+# ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config dn
+.
+.
+.
+dn: cn={4}samba,cn=schema,cn=config
+
+
+
+# vi tls.ldif
+dn: cn=config
+changetype: modify
+add: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/ldap/certs/server.crt
+-
+add: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/ldap/certs/server.key
+
+# ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f tls.ldif
+
+# ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b "cn=config" olcTLSCertificateFile | grep TLS
+olcTLSCertificateFile: /etc/ldap/certs/server.crt
+
+# ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b "cn=config" olcTLSCertificateKeyFile | grep TLS
+olcTLSCertificateKeyFile: /etc/ldap/certs/server.key
+
+# cat access.ldif
+dn: olcDatabase={-1}frontend,cn=config
+changetype: modify
+add: olcAccess
+olcAccess: {0}to attrs=userPassword,givenName,sn,photo  by self write  by an
+ onymous auth  by dn.base="cn=Manager,dc=example,dc=com" write  by * none
+-
+add: olcAccess
+olcAccess: {1}to *  by self read  by dn.base="cn=Manager,dc=example,dc=com
+ " write  by * read
+
+# ldapadd -Q -Y EXTERNAL -H ldapi:/// -f access.ldif
+# ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b "olcDatabase={-1}frontend,cn=config"
+
+
+
+# systemctl restart slapd
+# systemctl enable  slapd
+
+
+# vi /etc/ldap/ldap.conf
+TLS_CACERT      /etc/ssl/certs/ca-certificates.crt
+BASE    dc=example,dc=com
+URI     ldap://127.0.0.1
+TLS_REQCERT     allow
+
+# systemctl edit slapd
+[Service]
+ExecStart=
+ExecStart=/usr/sbin/slapd -h "ldap:/// ldapi:/// ldaps:///" -g openldap -u openldap -F /etc/ldap/slapd.d
+
+# ldapsearch -H ldap://localhost  -x -w secret -D cn=Manager,dc=example,dc=com
+# ldapsearch -H ldaps://localhost -x -w secret -D cn=Manager,dc=example,dc=com
+
+
+
+
+# apt -y install smbldap-tools
+
+# cd /etc/smbldap-tools/
+# cp /usr/share/doc/smbldap-tools/examples/smbldap.conf.gz .
+# cp /usr/share/doc/smbldap-tools/examples/smbldap_bind.conf .
+
+# gunzip smbldap.conf.gz
+# chmod 600 smbldap_bind.conf
+
+# vi smbldap.conf
+# vi smbldap_bind.conf
+
+# smbldap-populate
+# smbldap-groupadd -a ldapusers
+# smbldap-groupadd -a ldapwheel
+# smbldap-useradd  -a -m -g ldapusers -G ldapwheel -c "Gihren ZABI" gihren
+# smbldap-passwd gihren
+
+
+=======================================
+
+# apt -y install sssd sssd-ldap
+
+# vi /etc/sssd/sssd.conf
+[sssd]
+debug_level = 9
+config_file_version = 2
+services = nss, pam
+domains = LDAP
+
+[domain/LDAP]
+ldap_schema = rfc2307
+cache_credentials = true
+
+id_provider     = ldap
+auth_provider   = ldap
+chpass_provider = ldap
+
+ldap_uri = ldap://localhost
+ldap_search_base = dc=example,dc=com
+
+ldap_chpass_uri = ldap://localhost
+
+ldap_id_use_start_tls = true
+ldap_tls_reqcert = never
+
+ldap_user_search_base  = ou=Users,dc=example,dc=com
+ldap_group_search_base = ou=Groups,dc=example,dc=com
+
+# OK
+access_provider = simple
+simple_allow_groups = ldapusers
+
+# NG
+#access_provider = ldap
+#ldap_access_filter = memberOf=cn=ldapwheel,ou=Groups,dc=example,dc=com
+
+enumerate = true
+
+
+
+# chmod 600 /etc/sssd/sssd.conf
+
+# systemctl start  sssd
+# systemctl restart slapd
+# systemctl restart sssd
+
+# systemctl enable sssd
+
