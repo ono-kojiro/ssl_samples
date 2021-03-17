@@ -198,7 +198,7 @@ ExecStart=/usr/sbin/slapd -h "ldap:/// ldapi:/// ldaps:///" -g openldap -u openl
 # smbldap-populate
 # smbldap-groupadd -a ldapusers
 # smbldap-groupadd -a ldapwheel
-# smbldap-useradd  -a -m -g ldapusers -G ldapwheel -c "Gihren ZABI" gihren
+# smbldap-useradd  -a -m -g ldapusers -G ldapwheel -C "Gihren ZABI" gihren
 # smbldap-passwd gihren
 
 
@@ -252,7 +252,17 @@ enumerate = true
 
 # systemctl enable sssd
 
-# vi /etc/pam.d/common-session
+
+# apt -y install oddjob-mkhomedir
+# pam-auth-update --enable mkhomedir
+
+
+# cat /etc/pam.d/common-session
 ...
 session optional             pam_mkhomedir.so
+
+
+# su - gihren
+Creating directory '/home/gihre'.
+gihren@ubuntuuu:~$
 
