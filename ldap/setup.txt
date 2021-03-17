@@ -113,12 +113,12 @@ olcRootDN: cn=Manager,dc=example,dc=com
 
 
 
-
-# vi create_schema_ldif.sh
-
-# sh create_schema_ldif.sh samba
+# cp -f /usr/share/doc/samba/examples/LDAP/samba.ldif.gz .
+# gunzip -k -f samba.ldif.gz
+# rm -f samba.ldif.gz
 
 # ldapadd -Q -Y EXTERNAL -H ldapi:/// -f samba.ldif
+
 # ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config dn
 .
 .
@@ -174,6 +174,8 @@ TLS_REQCERT     allow
 [Service]
 ExecStart=
 ExecStart=/usr/sbin/slapd -h "ldap:/// ldapi:/// ldaps:///" -g openldap -u openldap -F /etc/ldap/slapd.d
+
+# systemctl restart slapd
 
 # ldapsearch -H ldap://localhost  -x -w secret -D cn=Manager,dc=example,dc=com
 # ldapsearch -H ldaps://localhost -x -w secret -D cn=Manager,dc=example,dc=com
