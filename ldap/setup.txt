@@ -163,6 +163,8 @@ olcAccess: {1}to *  by self read  by dn.base="cn=Manager,dc=example,dc=com
 # systemctl restart slapd
 # systemctl enable  slapd
 
+# vi /etc/tmpfiles.d/slapd-init.conf
+d /var/run/slapd 0755 openldap openldap -
 
 # vi /etc/ldap/ldap.conf
 TLS_CACERT      /etc/ssl/certs/ca-certificates.crt
@@ -174,6 +176,9 @@ TLS_REQCERT     allow
 [Service]
 ExecStart=
 ExecStart=/usr/sbin/slapd -h "ldap:/// ldapi:/// ldaps:///" -g openldap -u openldap -F /etc/ldap/slapd.d
+
+# vi /etc/tmpfiles.d/slapd-init.conf
+d /var/run/slapd 0755 openldap openldap -
 
 # systemctl restart slapd
 
@@ -198,13 +203,18 @@ ExecStart=/usr/sbin/slapd -h "ldap:/// ldapi:/// ldaps:///" -g openldap -u openl
 # smbldap-populate
 # smbldap-groupadd -a ldapusers
 # smbldap-groupadd -a ldapwheel
-# smbldap-useradd  -a -m -g ldapusers -G ldapwheel -C "Gihren ZABI" gihren
+# smbldap-useradd  -a -m -g ldapusers -c "Gihren ZABI" gihren
 # smbldap-passwd gihren
 
+# gpasswd -a gihren sudo
+
+# apt install libpam-cracklib
+# vi /etc/pamd./common-password
+password   requisite   pam_cracklib.so retry=3 minlen=8 difok=3 ucredit=-1 lcredit=-1 dcredit=-2 ocredit=-1
 
 =======================================
 
-# apt -y install sssd sssd-ldap
+# apt -y install sssd sssd-ldap sssd-tools
 
 # vi /etc/sssd/sssd.conf
 [sssd]
@@ -265,4 +275,7 @@ session optional             pam_mkhomedir.so
 # su - gihren
 Creating directory '/home/gihre'.
 gihren@ubuntuuu:~$
+
+# reboot 
+
 
