@@ -2,16 +2,21 @@
 
 set -e
 
-nickname=Server-Cert
+nickname=MyServer
 
-database_dir=/etc/ssl/server
+server=jenkins
+#server=server
+
+#database_dir=/etc/ssl/server
+database_dir=/etc/ssl/$server
 password=secret
 
-cacert=/etc/ssl/certs/cacert.pem
+cacert=/etc/ssl/certs/mylocalca.crt
 
 help() {
 	echo "usage : $0 <target>"
 	echo " target : clean init"
+	echo "          csr           create csr"
 	echo "          import_pem    import cacert.pem"
 	echo "          import_crt    import server.crt"
 	echo "          export_key    export server.key"
@@ -20,11 +25,12 @@ help() {
 clean() {
 	echo clean database
 	rm -rf ${database_dir}
-	echo /etc/ssl/server.{csr,crt,key,p12}
-	rm -f /etc/ssl/server.csr
-	rm -f /etc/ssl/server.crt
-	rm -f /etc/ssl/server.key
-	rm -f /etc/ssl/server.p12
+	echo /etc/ssl/$server/$server.{csr,crt,key,p12}
+	rm -f /etc/ssl/$server/$server.csr
+	rm -f /etc/ssl/$server/$server.crt
+	rm -f /etc/ssl/$server/$server.key
+	rm -f /etc/ssl/$server/$server.p12
+	rm -f /etc/ssl/$server/$server.jks
 }
 
 list() {
@@ -42,9 +48,9 @@ init() {
 	certutil -N -d ${database_dir} --empty-password
 }
 
-import_pem(){
+import_ca(){
 	certutil -d ${database_dir} \
-		-A -n "My Local CA" \
+		-A -n "MyLocalCA" \
 		-t "CT,," \
 		-a -i ${cacert}
 }
@@ -56,41 +62,77 @@ csr()
 	dd if=/dev/urandom of=noise.bin bs=1 count=2048 > /dev/null 2>&1
 	#-s "cn=localhost,O=Personal,L=Yokohama,ST=Kanagawa,C=JP" 
 	certutil -R \
-		-s "cn=MyUbuntuServer" \
+		-s "cn=$server" \
 		-f password.txt \
 		-z noise.bin \
-		-o server.csr \
+		-o /etc/ssl/$server/$server.csr \
 		-a \
 		-d ${database_dir}
 		
 	# -extSAN dns:localhost,192.168.0.6,ip:127.0.0.1
 
-	cat server.csr
+	cat /etc/ssl/$server/$server.csr
 	rm -f password.txt noise.bin
 }
 
 import_crt(){
-	echo import server.crt
+	echo import /etc/ssl/$server/$server.crt
 	certutil -A -d ${database_dir} \
 		-n "${nickname}" \
 		-t ",," \
-		-i ./server.crt
+		-i /etc/ssl/$server/$server.crt
 }
 
-export_key(){
-	echo export server.p12
-	pk12util -o server.p12 \
+export_key()
+{
+	p12
+	seckey
+	jks
+}
+
+p12()
+{
+	echo export $database_dir/$server.p12
+	pk12util -o $database_dir/$server.p12 \
        		-n "${nickname}" \
 		-d ${database_dir} \
 		-W "${password}"
+}
 
-	echo export server.key
+seckey()
+{
+	echo export $database_dir/$server.key
 	openssl pkcs12 \
-		-in server.p12 \
+		-in $database_dir/$server.p12 \
 		-nocerts \
-		-out server.key \
+		-out $database_dir/$server.key \
 		-password "pass:${password}" \
 		-nodes
+}
+
+jks()
+{
+	echo export $database_dir/$server.jks
+	rm -f $database_dir/$server.jks
+	keytool -importkeystore \
+		-srckeystore $database_dir/$server.p12 \
+		-srcstoretype PKCS12 \
+		-deststoretype JKS \
+		-destkeystore $database_dir/$server.jks \
+		-storepass "${password}" \
+		-keypass "${password}" \
+		-destkeypass "${password}" \
+		-srcstorepass "${password}"
+
+	# ubuntu:
+	# edit /etc/default/jenkins
+	#
+	# HTTPS_PORT=8443
+	# KEYSTORE=/var/lib/jenkins/jenkins.jks
+	# PASSWORD=secret
+	# JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpsPort=$HTTPS_PORT --https    KeyStore=$KEYSTORE --httpsKeyStorePassword=$PASSWORD --httpPort=$HTTP_PORT"
+	#
+
 }
 
 

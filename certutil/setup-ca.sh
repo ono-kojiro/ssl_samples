@@ -2,18 +2,21 @@
 
 set -e
 
-certname=MyCA
-nickname=MyCA
-database_dir=/etc/ssl/ca
+certname=MyLocalCA
+nickname=MyLocalCA
+database_dir=/etc/ssl/mylocalca
 password=secret
 
-cacert=/etc/ssl/certs/cacert.pem
+cacert=/etc/ssl/certs/mylocalca.crt
+
+server=jenkins
+server_addr=192.168.0.98
 
 help() {
 	echo "usage : $0 <target>"
 	echo " target"
 	echo "   init   init database"
-	echo "   pem    create cacert.pem"
+	echo "   ca     create CA"
 	echo "   crt    create server.crt"
 	echo ""
 	echo "   clean  remove database"
@@ -35,11 +38,11 @@ init() {
 	rm -f ${database_dir}/key3.db
 	rm -f ${database_dir}/secmod.db
 
-	echo create database
+	echo create database ${database_dir}
 	certutil -N -d ${database_dir} --empty-password
 }
 
-pem() {
+ca() {
 	echo make a certificate
 	echo $password > password.txt
 	dd if=/dev/urandom of=noise.bin bs=1 count=2048 > /dev/null 2>&1
@@ -66,20 +69,20 @@ pem() {
 }
 
 crt() {
-	echo CA: create server.crt
+	echo CA: create /etc/ssl/$server/$server.crt
 	echo $password > password.txt
 		
 	#-x \
 	certutil -C \
 		-c "$certname" \
-		-i server.csr \
+		-i /etc/ssl/$server/$server.csr \
 		-a \
-		-o server.crt \
+		-o /etc/ssl/$server/$server.crt \
 		-f password.txt \
-		--extSAN dns:localhost,ip:192.168.0.12,ip:127.0.0.1 \
+		--extSAN dns:localhost,ip:$server_addr,ip:127.0.0.1 \
 		-v 120 \
 		-d ${database_dir}
-	echo CA: generated server.crt
+	echo CA: generated /etc/ssl/$server/$server.crt
 
 	rm -f password.txt
 }
