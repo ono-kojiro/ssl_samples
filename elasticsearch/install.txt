@@ -1,0 +1,45 @@
+$ sudo apt -y install elasticsearch
+
+$ sudo systemctl start elasticsearch
+
+$ sudo vi /etc/elasticsearch/elasticsearch.yml
+network.host: 192.168.0.98
+discovery.seed_hosts: ["192.168.0.98"]
+
+$ curl http://192.168.0.98:9200/
+
+
+==================================
+
+$ sudo /usr/share/elasticsearch/bin/elasticsearch-certutil \
+	ca \
+	--out /etc/elasticsearch/elastic-stack-ca.p12 \
+	--pass ''
+$ sudo chmod 660 /etc/elasticsearch/elastic-stack-ca.p12
+
+$ sudo /usr/share/elasticsearch/bin/elasticsearch-certutil \
+	cert \
+		--ca  /etc/elasticsearch/elastic-stack-ca.p12 \
+		--ca-pass '' \
+		--out /etc/elasticsearch/elastic-cert.p12 \
+		--pass ''
+$ sudo chmod 660 /etc/elasticsearch/elastic-cert.p12
+
+
+$ sudo vi /etc/elasticsearch/elasticsearch.yml
+
+xpack.security.enabled: true
+
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.verification_mode: certificate
+
+xpack.security.http.ssl.keystore.path: elastic-cert.p12
+xpack.security.http.ssl.truststore.path: elastic-cert.p12
+
+xpack.security.transport.ssl.enabled: true
+
+$ sudo /usr/share/elasticsearch/bin/elasticsearch-setup-passwords \
+  auto -u https://192.168.0.98:9200 > password.txt 2>&1
+
+
+
