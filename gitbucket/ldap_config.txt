@@ -1,0 +1,53 @@
+# enable ssh
+
+1. login as root
+
+2. click user button (right top of browser)
+   and click "System administration"
+
+3. click "System settings" (left menu)
+
+## "System settings" tab
+1. edit "Base URL"
+  http://localhost:8080
+
+## "Integrations" tab
+1. check "Enable SSH access to git repository"
+
+2. edit "SSH host" : localhost
+
+3. edit "SSH port" : 29418
+
+
+# create repository
+1. click "New repository" ( "+" mark )
+2. create a repository
+
+# checkout
+1. checkout
+
+
+# enable LDAP authentication
+
+## "Authentication" tab
+1. check "LDAP"
+
+2. edit ldap configuration
+
+  LDAP host : 192.168.0.98 ( NOT localhost!)
+  LDAP port : 389
+  Bind DN   : cn=Manager,dc=example,dc=com
+  Bind password : ************
+  Base DN   : dc=example,dc=com
+  User name attribute : uid
+  Full name attribute : displayName
+  Mail address attribute : mail
+
+3. push "Apply changes" button
+
+4. logout
+
+5. login as a ldap user
+
+
+
