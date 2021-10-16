@@ -2,14 +2,14 @@
 
 set -e
 
-certname=MyLocalCA
-nickname=MyLocalCA
-database_dir=/etc/ssl/mylocalca
+certname=MyCA
+nickname=MyCA
+database_dir=/etc/ssl/myca
 password=secret
 
-cacert=/etc/ssl/certs/mylocalca.crt
+cacert=myca.crt
 
-server=jenkins
+server=myserver
 server_addr=192.168.0.98
 
 help() {
@@ -53,7 +53,7 @@ ca() {
 		-d ${database_dir} \
 		-z noise.bin \
 		-n "$certname" \
-		-s "cn=MyUbuntuCA" \
+		-s "cn=MyCA" \
 		-t "CT,C,C" \
 		-m $RANDOM \
 		-k rsa \
@@ -63,7 +63,7 @@ ca() {
 		-2
 	echo export ${cacert}
 	certutil -L -d ${database_dir} \
-		-n "$certname" -a > ${cacert}
+		-n "$certname" -a > ${database_dir}/${cacert}
 	rm -f password.txt
 	rm -f noise.bin
 }
@@ -88,7 +88,6 @@ crt() {
 }
 
 for target in $@; do
-	#type=`type -t $target || true`
 	cnt=`type $target | grep 'function' | wc -l || true`
 	if [ "x$cnt" = "x1" ]; then
 		$target
