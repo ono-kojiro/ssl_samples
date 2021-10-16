@@ -4,21 +4,18 @@ set -e
 
 nickname=MyServer
 
-server=jenkins
+server=myserver
 #server=server
 
 #database_dir=/etc/ssl/server
 database_dir=/etc/ssl/$server
 password=secret
 
-cacert=/etc/ssl/certs/mylocalca.crt
-
 help() {
 	echo "usage : $0 <target>"
 	echo " target : clean init"
 	echo "          csr           create csr"
-	echo "          import_pem    import cacert.pem"
-	echo "          import_crt    import server.crt"
+	echo "          import    import server.crt"
 	echo "          export_key    export server.key"
 }
 
@@ -48,13 +45,6 @@ init() {
 	certutil -N -d ${database_dir} --empty-password
 }
 
-import_ca(){
-	certutil -d ${database_dir} \
-		-A -n "MyLocalCA" \
-		-t "CT,," \
-		-a -i ${cacert}
-}
-
 csr()
 {
 	echo create csr
@@ -75,7 +65,7 @@ csr()
 	rm -f password.txt noise.bin
 }
 
-import_crt(){
+import(){
 	echo import /etc/ssl/$server/$server.crt
 	certutil -A -d ${database_dir} \
 		-n "${nickname}" \
