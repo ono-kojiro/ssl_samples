@@ -4,12 +4,13 @@ set -e
 
 nickname=MyServer
 
-server=myserver
-#server=server
+server=`echo $nickname | tr '[:upper:]' '[:lower:]'`
 
 #database_dir=/etc/ssl/server
-database_dir=/etc/ssl/$server
+database_dir=`pwd`/$server
 password=secret
+
+csrfile=${database_dir}/$server.csr
 
 help() {
 	echo "usage : $0 <target>"
@@ -47,21 +48,19 @@ init() {
 
 csr()
 {
-	echo create csr
+	echo "create csr"
 	echo ${password} > password.txt
 	dd if=/dev/urandom of=noise.bin bs=1 count=2048 > /dev/null 2>&1
-	#-s "cn=localhost,O=Personal,L=Yokohama,ST=Kanagawa,C=JP" 
-	certutil -R \
+	
+    certutil -R \
 		-s "cn=$server" \
 		-f password.txt \
 		-z noise.bin \
-		-o /etc/ssl/$server/$server.csr \
+		-o $csrfile \
 		-a \
 		-d ${database_dir}
-		
-	# -extSAN dns:localhost,192.168.0.6,ip:127.0.0.1
 
-	cat /etc/ssl/$server/$server.csr
+	#cat $csrfile
 	rm -f password.txt noise.bin
 }
 
@@ -125,6 +124,10 @@ jks()
 
 }
 
+vars()
+{
+  echo "csrfile : $csrfile"
+}
 
 for target in $@; do
 	#type=`type -t $target || true`
