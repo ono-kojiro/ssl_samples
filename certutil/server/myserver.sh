@@ -1,6 +1,6 @@
 #!/bin/sh
 
-nickname=MyServer
+nickname=optiplex
 
 server=`echo $nickname | tr '[:upper:]' '[:lower:]'`
 

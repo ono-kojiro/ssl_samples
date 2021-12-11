@@ -1,16 +1,18 @@
 #!/bin/sh
 
-certname=MyCA
+certname=MyLocalCA
+
+server_addr=${server_addr:-"192.168.0.98"}
+
+
+output_dir=./out
+cafile=`echo $certname | tr '[:upper:]' '[:lower:]'`
+cacert=${output_dir}/${cafile}.crt
+
 nickname=$certname
 database_dir=./db
 password=${password:-"secret"}
-
 months_valid=120
-
-output_dir=./out
-cacert=${output_dir}/myca.crt
-
-server_addr=${server_addr:-"192.168.0.93"}
 
 help() {
 	echo "usage : $0 <target>"
