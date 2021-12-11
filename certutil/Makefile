@@ -18,6 +18,8 @@ crt :
 key :
 	cd server && $(MAKE) import save
 
+test : mclean init csr crt key
+
 clean :
 	cd ca     && sh myca.sh     clean
 	cd server && sh myserver.sh clean
