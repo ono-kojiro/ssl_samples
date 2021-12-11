@@ -27,14 +27,13 @@ help() {
 }
 
 clean() {
-	echo clean database
+	rm -rf ${output_dir}
+}
+
+destroy()
+{
+	clean
 	rm -rf ${database_dir}
-	echo /etc/ssl/$server/$server.{csr,crt,key,p12}
-	rm -f /etc/ssl/$server/$server.csr
-	rm -f /etc/ssl/$server/$server.crt
-	rm -f /etc/ssl/$server/$server.key
-	rm -f /etc/ssl/$server/$server.p12
-	rm -f /etc/ssl/$server/$server.jks
 }
 
 list() {
@@ -43,7 +42,6 @@ list() {
 
 init() {
   mkdir -p ${database_dir}
-  mkdir -p ${output_dir}
   rm -f ${database_dir}/cert8.db
   rm -f ${database_dir}/key3.db
   rm -f ${database_dir}/secmod.db
@@ -57,18 +55,18 @@ init() {
 csr()
 {
 	echo "create csr"
+	mkdir -p ${output_dir}
 	echo ${password} > password.txt
 	dd if=/dev/urandom of=noise.bin bs=1 count=2048 > /dev/null 2>&1
 	
     certutil -R \
+		-d ${database_dir} \
 		-s "cn=$server" \
 		-f password.txt \
 		-z noise.bin \
 		-o $csrfile \
-		-a \
-		-d ${database_dir}
+		-a 
 
-	#cat $csrfile
 	rm -f password.txt noise.bin
 }
 

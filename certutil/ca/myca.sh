@@ -5,7 +5,10 @@ nickname=$certname
 database_dir=./db
 password=${password:-"secret"}
 
-cacert=./myca.crt
+months_valid=120
+
+output_dir=./out
+cacert=${output_dir}/myca.crt
 
 server_addr=${server_addr:-"192.168.0.93"}
 
@@ -70,13 +73,15 @@ ca() {
 	-g 2048 \
 	-Z SHA256 \
 	-f password.txt \
+	-v $months_valid \
 	-2
+ 
   echo export ${cacert}
+  mkdir -p ${output_dir}
   certutil -L -d ${database_dir} \
     -n "$certname" -a > ${cacert}
   
-  rm -f password.txt
-  rm -f noise.bin
+  rm -f password.txt noise.bin
 }
 
 crt() {
@@ -133,14 +138,20 @@ vars()
   echo "server_addr  : ${server_addr}"
 }
 
+clean()
+{
+  rm -rf ${output_dir}
+}
+
 destroy()
 {
-  rm -rd ${database_dir}
+  clean
+  rm -rf ${database_dir}
 }
 
 args=""
-input=""
-output=""
+input=${input:-"../server/out/myserver.csr"}
+output=${output:-"../server/out/myserver.crt"}
 
 show_help=0
 

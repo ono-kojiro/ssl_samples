@@ -7,10 +7,16 @@ ca :
 	sh myca.sh ca
 
 crt :
-	sh myca.sh crt \
-		-i ../server/myserver.csr \
-		-o ../server/myserver.crt
+	sh myca.sh crt 
 
 clean :
+	sh myca.sh clean
+
+mclean : destroy
+
+destroy :
 	sh myca.sh destroy
+
+.PHONY : \
+	all clean test init ca crt
 
