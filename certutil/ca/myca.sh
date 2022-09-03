@@ -1,24 +1,26 @@
 #!/bin/sh
 
-certname=MyLocalCA
-
-server_addr=${server_addr:-"192.168.0.98"}
+ca_name=MyLocalCA
 
 
-output_dir=./out
-cafile=`echo $certname | tr '[:upper:]' '[:lower:]'`
-cacert=${output_dir}/${cafile}.crt
+output_dir="$HOME/.local/share/$ca_name"
+cabase=`echo $ca_name | tr '[:upper:]' '[:lower:]'`
+cacert="${output_dir}/${cabase}.pem"
 
-nickname=$certname
-database_dir=./db
+database="$output_dir/db"
 password=${password:-"secret"}
 months_valid=120
+
+#server_addrs="10.0.3.224 127.0.0.1"
+
+input=$HOME/.local/share/MyLocalServer/mylocalserver.csr
+output=$HOME/.local/share/MyLocalServer/mylocalserver.crt
 
 help() {
 	echo "usage : $0 <target>"
 	echo " target"
-	echo "   init   init database"
-	echo "   ca     create CA"
+	echo "   init   init database and ca"
+	echo ""
 	echo "   crt    create server.crt"
 	echo ""
 	echo "   clean  remove database"
@@ -26,49 +28,48 @@ help() {
 
 clean() {
 	echo clean database
-	rm -rf ${database_dir}
+	rm -rf ${database}
 	rm -f ${cacert}
 }
 
 list() {
-	certutil -L -d ${database_dir}
+	certutil -L -d ${database}
 }
 
-init() {
+db() {
   if [ "$show_help" != "0" ]; then
     echo "usage: $0 init"
     exit 1
   fi
 
-  mkdir -p ${database_dir}
-  rm -f ${database_dir}/cert8.db
-  rm -f ${database_dir}/key3.db
-  rm -f ${database_dir}/secmod.db
+  mkdir -p ${database}
+  rm -f ${database}/*
 
-  echo create database ${database_dir}
-  certutil -N -d ${database_dir} --empty-password
+  echo create database ${database}
+  certutil -N -d ${database} --empty-password
 }
 
+
 ca() {
-  if [ -z "$certname" ]; then
-    echo "ERROR : no certname option"
+  if [ -z "$ca_name" ]; then
+    echo "ERROR : no ca_name option"
     exit 1
   fi
 
-  echo make a certificate, ${database_dir}
+  echo make a certificate, ${database}
   echo $password > password.txt
   dd if=/dev/urandom of=noise.bin bs=1 count=2048 > /dev/null 2>&1
-  echo "initialize CA, $database_dir"
+  echo "initialize CA, $database"
 
-  mkdir -p ${database_dir}
+  mkdir -p ${database}
 
   printf 'y\n0\ny\n' | \
   certutil -S \
 	-x \
-	-d ${database_dir} \
+	-d ${database} \
 	-z noise.bin \
-	-n "$certname" \
-	-s "cn=${certname}" \
+	-n "$ca_name" \
+	-s "cn=${ca_name}" \
 	-t "CT,C,C" \
 	-m $RANDOM \
 	-k rsa \
@@ -80,15 +81,21 @@ ca() {
  
   echo export ${cacert}
   mkdir -p ${output_dir}
-  certutil -L -d ${database_dir} \
-    -n "$certname" -a > ${cacert}
+  certutil -L -d ${database} \
+    -n "$ca_name" -a > ${cacert}
   
   rm -f password.txt noise.bin
 }
 
+init()
+{
+  db
+  ca
+}
+
 crt() {
   if [ "$show_help" != "0" ]; then
-    echo "usage : $0 --output output.crt --input input.csr"
+    echo "usage : $0 --output output.crt --input input.csr addr1 addr2 ..."
     exit 1
   fi
 
@@ -103,37 +110,46 @@ crt() {
     ret=`expr $ret + 1`
   fi
 
-  if [ -z "$server_addr" ]; then
-    echo "ERROR : no server-addr option"
+  if [ "$#" -eq 0 ]; then
+    echo "no server addresses"
     ret=`expr $ret + 1`
   fi
-
+  
   if [ $ret != 0 ]; then
     exit $ret
   fi
+    
+  server_addrs="$@"
 
   echo CA: create ${output}
   echo $password > password.txt
+
+  extsan="dns:localhost"
+  for addr in $server_addrs; do
+    extsan="$extsan,ip:$addr"
+  done
 		
   #-x \
-  certutil -C \
-    -c "$certname" \
-    -i ${input} \
-    -a \
-    -o ${output} \
-    -f password.txt \
-    --extSAN dns:localhost,ip:$server_addr,ip:127.0.0.1 \
-    -v 120 \
-    -d ${database_dir}
+  cmd="certutil -C"
+  cmd="$cmd -c $ca_name"
+  cmd="$cmd -i ${input}"
+  cmd="$cmd -a"
+  cmd="$cmd -o ${output}"
+  cmd="$cmd -f password.txt"
+  cmd="$cmd --extSAN $extsan"
+  cmd="$cmd -v 120"
+  cmd="$cmd -d ${database}"
   
-  echo CA: generated ${output}		
+  echo $cmd
+  $cmd
+  echo "generated ${output}"
   rm -f password.txt
 }
 
 vars()
 {
-  echo "certname     : ${certname}"
-  echo "database_dir : ${database_dir}"
+  echo "ca_name      : ${ca_name}"
+  echo "database     : ${database}"
   echo "cacert       : ${cacert}"
   echo "input        : ${input}"
   echo "output       : ${output}"
@@ -142,19 +158,29 @@ vars()
 
 clean()
 {
-  rm -rf ${output_dir}
+  rm -f ${output_dir}/*.pem
 }
 
 destroy()
 {
-  clean
-  rm -rf ${database_dir}
+  rm -rf ${output_dir}
 }
 
-args=""
-input=${input:-"../server/out/myserver.csr"}
-output=${output:-"../server/out/myserver.crt"}
+if [ "$#" -eq 0 ]; then
+  show_help
+  exit 1
+fi
 
+subcmd=$1
+shift
+	
+num=`LANG=C type $subcmd | grep 'function' | wc -l`
+if [ "$num" -eq 0 ]; then
+  echo \"$subcmd\" is not a function.
+  exit 2
+fi
+
+args=""
 show_help=0
 
 while [ "$#" != "0" ]; do
@@ -162,9 +188,9 @@ while [ "$#" != "0" ]; do
     -h | --help)
       show_help=1
       ;;
-    -c | --certname)
+    -c | --ca_name)
       shift
-      certname=$1
+      ca_name=$1
       ;;
     -i | --input)
       shift
@@ -174,24 +200,13 @@ while [ "$#" != "0" ]; do
       shift
       output=$1
       ;;
-    -s | --server-addr)
-      shift
-      server_addr=$1
-      ;;
     *)
-      args="$args $1"
+      break
       ;;
   esac
 
   shift
 done
 
-for target in $args; do
-	LANG=C type $target | grep 'function' > /dev/null 2>&1
-	if [ "$?" = "0" ]; then
-		$target
-	else
-		echo target \"$target\" is not a function.
-	fi
-done
+$subcmd "$@"
 

@@ -1,13 +1,14 @@
 #!/bin/sh
 
-nickname=optiplex
+servername=${servername:-"MyLocalServer"}
 
-server=`echo $nickname | tr '[:upper:]' '[:lower:]'`
+server=`echo $servername | tr '[:upper:]' '[:lower:]'`
 
-database_dir=./db
+output_dir="$HOME/.local/share/$servername"
+
+database="$output_dir/db"
 password=${password:-"secret"}
 
-output_dir=./out
 csrfile=${output_dir}/${server}.csr
 crtfile=${output_dir}/${server}.crt
   
@@ -27,40 +28,39 @@ help() {
 }
 
 clean() {
-	rm -rf ${output_dir}
+  rm -f ${output_dir}/*.csr
+  rm -f ${output_dir}/*.crt
+  rm -f ${output_dir}/*.key
 }
 
 destroy()
 {
-	clean
-	rm -rf ${database_dir}
+  rm -rf ${output_dir}
 }
 
 list() {
-	certutil -L -d ${database_dir}
+  certutil -L -d ${database}
 }
 
-init() {
-  mkdir -p ${database_dir}
-  rm -f ${database_dir}/cert8.db
-  rm -f ${database_dir}/key3.db
-  rm -f ${database_dir}/secmod.db
+db() {
+  rm -rf ${database}
+  mkdir -p ${database}
 
-  echo create database ${database_dir}
+  echo create database ${database}
   dd if=/dev/urandom of=noise.bin bs=1 count=2048 > /dev/null 2>&1
-  certutil -N -d ${database_dir} --empty-password
+  certutil -N -d ${database} --empty-password
   rm -f noise.bin
 }
 
 csr()
 {
-	echo "create csr"
+	echo "create csr, $csrfile"
 	mkdir -p ${output_dir}
 	echo ${password} > password.txt
 	dd if=/dev/urandom of=noise.bin bs=1 count=2048 > /dev/null 2>&1
 	
     certutil -R \
-		-d ${database_dir} \
+		-d ${database} \
 		-s "cn=$server" \
 		-f password.txt \
 		-z noise.bin \
@@ -70,11 +70,16 @@ csr()
 	rm -f password.txt noise.bin
 }
 
+init() {
+  db
+}
+
+
 import()
 {
 	echo "import $crtfile"
-	certutil -A -d ${database_dir} \
-		-n "${nickname}" \
+	certutil -A -d ${database} \
+		-n "${servername}" \
 		-t ",," \
 		-i $crtfile
 }
@@ -83,15 +88,15 @@ save()
 {
 	p12
 	seckey
-	#jks
+	jks
 }
 
 p12()
 {
   echo export $p12file
   pk12util -o $p12file \
-    -n "${nickname}" \
-    -d ${database_dir} \
+    -n "${servername}" \
+    -d ${database} \
     -W "${password}"
 }
 
@@ -110,13 +115,13 @@ seckey()
 
 jks()
 {
-	echo export $database_dir/$server.jks
-	rm -f $database_dir/$server.jks
+	echo export $output_dir/$server.jks
+	rm -f $output_dir/$server.jks
 	LANG=C keytool -importkeystore \
-		-srckeystore $database_dir/$server.p12 \
+		-srckeystore $output_dir/$server.p12 \
 		-srcstoretype PKCS12 \
 		-deststoretype JKS \
-		-destkeystore $database_dir/$server.jks \
+		-destkeystore $output_dir/$server.jks \
 		-storepass "${password}" \
 		-keypass "${password}" \
 		-destkeypass "${password}" \
@@ -140,7 +145,7 @@ vars()
 
 destroy()
 {
-  rm -rf ${database_dir}
+  rm -rf ${database}
   rm -rf ${output_dir}
 }
 

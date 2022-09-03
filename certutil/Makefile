@@ -3,22 +3,21 @@ all :
 init : init-ca init-server
 
 init-ca :
-	cd ca && sh myca.sh init
-	cd ca && sh myca.sh ca
+	$(MAKE) -C ca init
 
 init-server :
-	cd server && sh myserver.sh init
+	$(MAKE) -C server init
 
 csr :
-	cd server && sh myserver.sh csr
+	$(MAKE) -C server csr
 
 crt :
-	cd ca && $(MAKE) crt
+	$(MAKE) -C ca crt
 
 key :
-	cd server && $(MAKE) import save
+	$(MAKE) -C server import save
 
-test : mclean init csr crt key
+test : init csr crt key
 
 clean :
 	cd ca     && sh myca.sh     clean

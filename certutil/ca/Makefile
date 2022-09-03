@@ -1,13 +1,10 @@
-all : init ca
+all : init
 	
 init :
 	sh myca.sh init
 
-ca :
-	sh myca.sh ca
-
 crt :
-	sh myca.sh crt 
+	sh myca.sh crt 192.168.0.98 127.0.0.1 
 
 clean :
 	sh myca.sh clean
@@ -18,5 +15,5 @@ destroy :
 	sh myca.sh destroy
 
 .PHONY : \
-	all clean test init ca crt
+	all clean test db ca crt
 

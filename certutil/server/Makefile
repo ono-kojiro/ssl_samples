@@ -1,4 +1,4 @@
-all :
+all : init csr
 
 init :
 	sh myserver.sh init
