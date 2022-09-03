@@ -1,10 +1,12 @@
+ADDR = $(shell hostname -i)
+
 all : init
 	
 init :
 	sh myca.sh init
 
 crt :
-	sh myca.sh crt 192.168.0.98 127.0.0.1 
+	sh myca.sh crt $(ADDR) 127.0.0.1 
 
 clean :
 	sh myca.sh clean

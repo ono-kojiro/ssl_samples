@@ -11,8 +11,6 @@ database="$output_dir/db"
 password=${password:-"secret"}
 months_valid=120
 
-#server_addrs="10.0.3.224 127.0.0.1"
-
 input=$HOME/.local/share/MyLocalServer/mylocalserver.csr
 output=$HOME/.local/share/MyLocalServer/mylocalserver.crt
 
