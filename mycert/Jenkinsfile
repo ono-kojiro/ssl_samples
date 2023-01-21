@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('publish'){
+            steps {
+                sh '''#!/bin/sh
+                  jf rt build-clean
+                  jf rt build-add-git
+                  jf rt build-collect-env ${JOB_NAME} ${BUILD_NUMBER}
+                  jf rt build-publish ${JOB_NAME} ${BUILD_NUMBER}
+                '''
+            }
+        }
+        stage('configure'){
+            steps {
+                sh '''#!/bin/sh
+                autoreconf -vi
+                sh configure --prefix=/usr 
+                '''
+            }
+        }
+        stage('build'){
+            steps {
+                sh  'make -j `nproc`'
+            }
+        }
+        stage('test'){
+            steps {
+                sh  'make check'
+            }
+        }
+        stage('report'){
+            steps {
+                sh  'make report'
+            }
+        }
+        stage('install'){
+            steps {
+                sh  'make install DESTDIR=`pwd`/dest'
+            }
+        }
+        stage('package'){
+            steps {
+                sh  'make deb'
+            }
+        }
+        stage('upload'){
+            steps {
+                sh '''#!/bin/sh
+                  jf rt upload --flat *.deb mydebrepo-local
+                '''
+            }
+        }
+    }
+}
+
