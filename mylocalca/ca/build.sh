@@ -13,6 +13,9 @@ months_valid=120
 input=${input:-"$HOME/.local/share/MyServer/myserver.csr"}
 output=${output:-"$HOME/.local/share/MyServer/myserver.crt"}
 
+extkeyusage="serverAuth"
+certtype="sslServer"
+
 help() {
   echo "usage : $0 <target>"
   cat - << EOS
@@ -76,7 +79,12 @@ ca() {
 	-f password.txt \
 	-v $months_valid \
 	-2
- 
+
+  export_cacert
+}
+
+export_cacert()
+{ 
   echo export ${cacert}
   mkdir -p ${output_dir}
   certutil -L -d ${database} \
@@ -108,11 +116,11 @@ crt() {
     ret=`expr $ret + 1`
   fi
 
-  if [ "$#" -eq 0 ]; then
-    echo "no server addresses"
-    ret=`expr $ret + 1`
-  fi
-  
+  #if [ $# -eq 0 ]; then
+  #  echo "no server addresses"
+  #  ret=`expr $ret + 1`
+  #fi
+
   if [ $ret != 0 ]; then
     exit $ret
   fi
@@ -126,7 +134,8 @@ crt() {
   for addr in $server_addrs; do
     extsan="$extsan,ip:$addr"
   done
-		
+
+  # -C : create a new binary certificate file		
   #-x \
   cmd="certutil -C"
   cmd="$cmd -c $ca_name"
@@ -137,6 +146,8 @@ crt() {
   cmd="$cmd --extSAN $extsan"
   cmd="$cmd -v 120"
   cmd="$cmd -d ${database}"
+  cmd="$cmd --nsCertType $certtype"
+  cmd="$cmd --extKeyUsage $extkeyusage"
   
   echo $cmd
   $cmd
@@ -197,6 +208,14 @@ while [ "$#" != "0" ]; do
     -o | --output)
       shift
       output=$1
+      ;;
+    -e | --extkeyusage)
+      shift
+      extkeyusage=$1
+      ;;
+    -t | --certtype)
+      shift
+      certtype=$1
       ;;
     *)
       break
