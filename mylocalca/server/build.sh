@@ -1,7 +1,12 @@
 #!/bin/sh
 
-servername=${servername:-"MyServer"}
-output_dir="$HOME/.local/share/$servername"
+top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
+cd $top_dir
+
+servername=${servername:-"server"}
+serveraddr=192.168.0.98
+
+output_dir="$top_dir"
 
 server=`echo $servername | tr '[:upper:]' '[:lower:]'`
 
@@ -15,19 +20,34 @@ p12file=${output_dir}/${server}.p12
 pemfile=${output_dir}/${server}.key.pem
 keyfile=${output_dir}/${server}.key
 
-help() {
-	echo "usage : $0 <target>"
-  cat - << EOS
+help()
+{
+cat - << EOS
+usage : $0 <target>
   target :
     clean
     init
     csr     create server.csr
+    crt     create server.crt
     load    import server.crt
     list    show list of certificate
     save    export server.key
 EOS
 
 }
+
+all()
+{
+  #destroy
+  init
+
+  csr
+  crt
+  load
+
+  save
+}
+
 
 clean() {
   rm -f ${output_dir}/*.csr
@@ -37,7 +57,7 @@ clean() {
 
 destroy()
 {
-  rm -rf ${output_dir}
+  rm -rf ${output_dir}/db
 }
 
 list() {
@@ -74,6 +94,14 @@ csr()
 
 init() {
   db
+}
+
+crt()
+{
+  cd ../ca
+  pwd
+  sh ./build.sh crt -i ${csrfile} -o ${crtfile} ${serveraddr}
+  cd $top_dir 
 }
 
 
@@ -143,12 +171,6 @@ jks()
 vars()
 {
   echo "csrfile : $csrfile"
-}
-
-destroy()
-{
-  rm -rf ${database}
-  rm -rf ${output_dir}
 }
 
 args=""
