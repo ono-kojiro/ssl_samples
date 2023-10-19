@@ -1,17 +1,17 @@
 #!/bin/sh
 
-ca_name=MyLocalCA
+top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
+cd $top_dir
 
-output_dir="$HOME/.local/share/$ca_name"
+ca_name=MyCA
+
+output_dir="$top_dir"
 cabase=`echo $ca_name | tr '[:upper:]' '[:lower:]'`
 cacert="${output_dir}/${cabase}.pem"
 
 database="$output_dir/db"
 password=${password:-"secret"}
 months_valid=120
-
-input=${input:-"$HOME/.local/share/MyServer/myserver.csr"}
-output=${output:-"$HOME/.local/share/MyServer/myserver.crt"}
 
 extkeyusage="serverAuth"
 certtype="sslServer"
@@ -192,7 +192,7 @@ fi
 args=""
 show_help=0
 
-while [ "$#" != "0" ]; do
+while [ $# -ne 0 ]; do
   case $1 in
     -h | --help)
       show_help=1
