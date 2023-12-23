@@ -17,12 +17,15 @@ extkeyusage="serverAuth"
 certtype="sslServer"
 
 help() {
-  echo "usage : $0 <target>"
   cat - << EOS
-  target
-   init   init database and ca
-   crt    create server.crt
-   clean  remove database
+usage : $0 <target>
+target
+ init   init database
+ ca     create CA
+ show   show contents of cacert
+
+ crt    create server.crt
+ clean  remove database
 EOS
 
 }
@@ -37,7 +40,8 @@ list() {
 	certutil -L -d ${database}
 }
 
-db() {
+init()
+{
   if [ "$show_help" != "0" ]; then
     echo "usage: $0 init"
     exit 1
@@ -50,8 +54,8 @@ db() {
   certutil -N -d ${database} --empty-password
 }
 
-
-ca() {
+ca()
+{
   if [ -z "$ca_name" ]; then
     echo "ERROR : no ca_name option"
     exit 1
@@ -83,6 +87,11 @@ ca() {
   export_cacert
 }
 
+show()
+{
+  openssl x509 -in ${cacert} -text
+}
+
 export_cacert()
 { 
   echo export ${cacert}
@@ -91,12 +100,6 @@ export_cacert()
     -n "$ca_name" -a > ${cacert}
   
   rm -f password.txt noise.bin
-}
-
-init()
-{
-  db
-  ca
 }
 
 crt() {
