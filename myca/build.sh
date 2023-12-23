@@ -7,7 +7,7 @@ ca_name=MyCA
 
 output_dir="$top_dir"
 cabase=`echo $ca_name | tr '[:upper:]' '[:lower:]'`
-cacert="${output_dir}/${cabase}.pem"
+cacert="${output_dir}/${cabase}.crt"
 
 database="$output_dir/db"
 password=${password:-"secret"}
@@ -170,12 +170,12 @@ vars()
 
 clean()
 {
-  rm -f ${output_dir}/*.pem
+  rm -f ${output_dir}/*.crt
 }
 
 destroy()
 {
-  rm -rf ${output_dir}
+  rm -rf ${database_dir}
 }
 
 if [ "$#" -eq 0 ]; then
