@@ -40,9 +40,14 @@ list() {
 	certutil -L -d ${database}
 }
 
+prepare()
+{
+  sudo apt -y install libnss3-tools
+}
+
 init()
 {
-  if [ "$show_help" != "0" ]; then
+  if [ "$show_help" -ne 0 ]; then
     echo "usage: $0 init"
     exit 1
   fi
@@ -178,8 +183,13 @@ destroy()
   rm -rf ${database_dir}
 }
 
-if [ "$#" -eq 0 ]; then
-  show_help
+install_cacert()
+{
+  ansible-playbook -K -i hosts.yml site.yml
+}
+
+if [ $# -eq 0 ]; then
+  help
   exit 1
 fi
 
