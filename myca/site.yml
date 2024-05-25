@@ -1,0 +1,26 @@
+- name: install cacert
+  hosts: myserver
+
+  tasks:
+  - name: create cacert directory
+    ansible.builtin.file:
+      path: /usr/share/ca-certificates/myca
+      state: directory
+      mode: '0755'
+
+  - name: copy cacert
+    ansible.builtin.copy:
+      src:  myca.crt
+      dest: /usr/share/ca-certificates/myca/
+      mode: '0755'
+
+  - name: add cacert path
+    ansible.builtin.lineinfile:
+      path: /etc/ca-certificates.conf
+      line: "myca/myca.crt"
+      state: present
+
+  - name: update cacert
+    ansible.builtin.shell: |
+      update-ca-certificates
+

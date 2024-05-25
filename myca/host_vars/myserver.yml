@@ -1,0 +1,5 @@
+---
+ansible_host: 192.168.0.98
+ansible_user: admin
+ansible_become: true
+ansible_ssh_common_args: -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no
