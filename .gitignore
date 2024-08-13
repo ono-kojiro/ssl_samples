@@ -1,3 +1,9 @@
 *~
 myservers/
+*.csr
+*.crt
+*.pem
+*.p12
+*.jks
+*.key
 
