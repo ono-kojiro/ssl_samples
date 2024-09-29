@@ -1,9 +1,0 @@
-db/
-*.pem
-*~
-*.crt
-*.key
-*.csr
-*.jks
-*.p12
-
