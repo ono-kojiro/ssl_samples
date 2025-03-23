@@ -3,8 +3,7 @@
 top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 cd $top_dir
 
-#client=${client:-"mylocalclient"}
-client=${client:-"abaoaqu"}
+client=${client:-"client"}
 cn="$client"
 
 output_dir="$top_dir"
@@ -19,6 +18,7 @@ crtfile=${output_dir}/${client}.crt
 p12file=${output_dir}/${client}.p12
 pemfile=${output_dir}/${client}.key.pem
 keyfile=${output_dir}/${client}.key
+derfile=${output_dir}/${client}.der
 
 help()
 {
@@ -77,10 +77,11 @@ csr()
 	cmd="$cmd -f password.txt"
 	cmd="$cmd -z noise.bin"
 	cmd="$cmd -o $csrfile"
-    cmd="$cmd --keyUsage digitalSignature,keyEncipherment"
+    #cmd="$cmd --keyUsage digitalSignature,keyEncipherment"
     #cmd="$cmd --keyUsage digitalSignature,nonRepudiation,dataEncipherment"
-    cmd="$cmd --nsCertType  sslClient"
-    cmd="$cmd --extKeyUsage clientAuth"
+    #cmd="$cmd --nsCertType  sslClient"
+    #cmd="$cmd --extKeyUsage clientAuth"
+    cmd="$cmd -n ${client}"
     cmd="$cmd -a"
 
     echo $cmd
@@ -140,7 +141,10 @@ save()
 {
 	p12
 	seckey
-	jks
+	#jks
+
+    der
+    cer
 }
 
 p12()
@@ -158,6 +162,13 @@ p12()
   echo "INFO: import p12 file in Microsoft Edge"
 }
 
+der()
+{
+  cmd="openssl x509 -outform der -in ${crtfile} -out ${derfile}"
+  echo $cmd
+  $cmd
+}
+
 seckey()
 {
 	echo export $pemfile
@@ -165,10 +176,16 @@ seckey()
 		-in  $p12file \
 		-nocerts \
 		-out $pemfile \
-		-password "pass:${password}" \
+        -password "pass:${p12pass}" \
 		-nodes
 
+
     openssl rsa -in  $pemfile -out $keyfile
+}
+
+cer()
+{
+  cat ${crtfile} ${keyfile} > ${client}.cer
 }
 
 vars()
@@ -179,6 +196,7 @@ vars()
 destroy()
 {
   rm -rf ${database}
+  rm -f ${client}.*
 }
 
 args=""
