@@ -3,10 +3,16 @@
 top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 cd $top_dir
 
-servername=${servername:-"webserver"}
-cn="webserver.example.com"
+servername=${servername:-"ldapserver"}
+
+#
+# Use IP address for common name
+# to set 'TLS_REQCERT try' in /etc/ldap/ldap.conf
+#
+cn="192.168.0.202"
+
 dnss="$cn localhost"
-ips="192.168.0.202"
+ips="192.168.0.202 127.0.0.1"
 
 #output_dir="$HOME/.local/share/$servername"
 output_dir="$top_dir"
