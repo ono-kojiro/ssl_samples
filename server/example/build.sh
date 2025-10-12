@@ -1,21 +1,20 @@
 #!/bin/sh
 
-top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
-cd $top_dir
+relative_dir=`dirname "$0"`
+absolute_dir=`cd "$relative_dir" >/dev/null 2>&1 && pwd`
 
-servername=${servername:-"ldapserver"}
+work_dir="$absolute_dir"
+cd $work_dir
 
-#
-# Use IP address for common name
-# to set 'TLS_REQCERT try' in /etc/ldap/ldap.conf
-#
-cn="192.168.0.202"
+top_dir=`git rev-parse --show-toplevel`
 
-dnss="$cn localhost"
-ips="192.168.0.202 127.0.0.1"
+servername=${servername:-"myhost"}
+cn="192.168.1.7"
+dnss="rocky.example.com localhost"
+ips="$cn 127.0.0.1"
 
 #output_dir="$HOME/.local/share/$servername"
-output_dir="$top_dir"
+output_dir="$work_dir"
 
 server=`echo $servername | tr '[:upper:]' '[:lower:]'`
 
@@ -131,11 +130,11 @@ init()
 
 crt()
 {
-  cd ../ca
+  cd ${top_dir}/ca
   pwd
   sh ./build.sh crt -i ${csrfile} -o ${crtfile}
-  cp -f ${crtfile} $top_dir/
-  cd $top_dir
+  #cp -f ${crtfile} $work_dir/
+  cd $work_dir
 }
 
 
