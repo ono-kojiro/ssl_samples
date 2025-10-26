@@ -156,6 +156,7 @@ save()
 {
 	p12
 	seckey
+    pubkey
 	jks
 }
 
@@ -179,6 +180,12 @@ seckey()
 		-nodes
 
     openssl rsa -in  $pemfile -out $keyfile
+}
+
+pubkey()
+{
+   echo export public key
+   openssl rsa -in ${server}.key -RSAPublicKey_out -traditional -out ${server}.pub
 }
 
 jks()
