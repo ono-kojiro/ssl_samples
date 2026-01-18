@@ -3,8 +3,11 @@
 top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 cd $top_dir
 
-server_name="luna2"
+server_name="myserver"
 server_base=`echo $server_name| tr '[:upper:]' '[:lower:]'`
+
+fqdn="${server_base}.example.com"
+ipaddr="192.168.1.13"
 
 server_key="${server_base}.key"
 server_crq="${server_base}.crq"
@@ -21,6 +24,8 @@ usage : $0 <target>
     key
     req
     crt
+
+    all
 EOS
 
 }
@@ -41,11 +46,24 @@ key()
 
 req()
 {
+  cat - << EOF > request.cfg
+country = "JP"
+organization = "Example Organization"
+unit = "MyServerUnit"
+cn = "${ipaddr}"
+
+expiration_days = 3650
+
+tls_www_server
+EOF
+
   certtool \
     --generate-request \
     --load-privkey ${server_key} \
     --template request.cfg \
     --outfile ${server_crq}
+
+  rm -f request.cfg
 }
 
 crq_info()
@@ -55,6 +73,13 @@ crq_info()
 
 crt()
 {
+  cat - << EOF > generate.cfg
+dns_name = "${fqdn}"
+dns_name = "localhost"
+ip_address = "${ipaddr}"
+ip_address = "127.0.0.1"
+EOF
+
   certtool \
     --generate-certificate \
     --load-request ${server_crq} \
@@ -62,6 +87,8 @@ crt()
     --load-ca-privkey ${ca_key} \
     --template generate.cfg \
     --outfile ${server_crt}
+
+  #rm -f generate.cfg
 }
 
 crt_info()
