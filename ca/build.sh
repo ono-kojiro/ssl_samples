@@ -3,13 +3,14 @@
 top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 cd $top_dir
 
-ca_name=MyLocalCA
+ca_name=MyRootCA
 
 output_dir="$top_dir"
+database="$output_dir/db"
+
 cabase=`echo $ca_name | tr '[:upper:]' '[:lower:]'`
 cacert="${output_dir}/${cabase}.crt"
 
-database="$output_dir/db"
 password=${password:-"secret"}
 months_valid=120
 
@@ -76,60 +77,66 @@ cacert()
 
   mkdir -p ${database}
 
-  cmd="certutil"
+  opts=""
 
   # Self sign
-  cmd="$cmd -x"
+  opts="$opts -x"
 
   # Make a certificate and add to database 
-  cmd="$cmd -S"
+  opts="$opts -S"
 
   # database-directory
-  cmd="$cmd -d ${database}"
+  opts="$opts -d ${database}"
 
   # Specify the noise file to be used
-  cmd="$cmd -z noise.bin"
+  opts="$opts -z noise.bin"
 
   # Specify the nickname of the cert
-  cmd="$cmd -n $ca_name"
+  opts="$opts -n $ca_name"
 
   # Specify the subject name (using RFC1485)
-  cmd="$cmd -s cn=${ca_name}"
+  opts="$opts -s cn=${ca_name}"
 
   # Set the certificate trust attributes
   #   trustargs is of the form x,y,z where:
   #     x is for SSL,
   #     y is for S/MIME
   #     z is for code signing.
-  # See also messages of 'certutil --help'
-  cmd="$cmd -t CT,C,C"
+  #
+  #     p - Valid peer
+  #     P - Trusted peer
+  #     c - Valid CA
+  #     C - Trusted CA
+  #     T - Trusted CA for client authentication (ssl server only)
+  # See also messages of 'certutil --help' or 'man certutils'
+  opts="$opts -t CT,C,C"
 
   # Cert serial number
-  cmd="$cmd -m $RANDOM"
+  opts="$opts -m $RANDOM"
 
   # Type of key pair to generate
-  cmd="$cmd -k rsa"
+  opts="$opts -k rsa"
 
   # Key size in bits
-  cmd="$cmd -g 2048"
+  opts="$opts -g 2048"
 
   # Specify the hash algorithm to use
-  cmd="$cmd -Z SHA256"
+  opts="$opts -Z SHA256"
 
   # Specify the password file
-  cmd="$cmd -f password.txt"
+  opts="$opts -f password.txt"
 
   # Months valid (default is 3)
-  cmd="$cmd -v $months_valid"
+  opts="$opts -v $months_valid"
 
   # Create basic constraint extension
-  cmd="$cmd -2"
-  echo $cmd
+  opts="$opts -2"
+  echo "CMD: certutil $opts"
 
   # Is this a CA certificate [y/N]? y
   # Enter the path length constraint, enter to skip [<0 for unlimited path]: 0
   # > Is this a critical extension [y/N]? y
-  printf 'y\n0\ny\n' | $cmd
+  printf 'y\n0\ny\n' | certutil $opts
 
   export_cacert
 }
@@ -151,7 +158,7 @@ export_cacert()
 
 crt()
 {
-  if [ "$show_help" != "0" ]; then
+  if [ "$show_help" -ne 0 ]; then
     echo "usage : $0 --output output.crt --input input.csr"
     exit 1
   fi
@@ -167,7 +174,7 @@ crt()
     ret=`expr $ret + 1`
   fi
   
-  if [ $ret != 0 ]; then
+  if [ "$ret" -ne 0 ]; then
     exit $ret
   fi
     
@@ -194,7 +201,7 @@ crt()
 }
 
 ccert() {
-  if [ "$show_help" != "0" ]; then
+  if [ "$show_help" -ne 0 ]; then
     echo "usage : $0 --output output.crt --input input.csr addr1 addr2 ..."
     exit 1
   fi
@@ -268,7 +275,7 @@ clean()
 
 destroy()
 {
-  rm -rf ${database_dir}
+  rm -rf ${database}
 }
 
 install_cacert()
@@ -293,7 +300,7 @@ fi
 args=""
 show_help=0
 
-while [ $# -ne 0 ]; do
+while [ "$#" -ne 0 ]; do
   case $1 in
     -h | --help)
       show_help=1
