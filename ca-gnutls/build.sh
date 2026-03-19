@@ -11,9 +11,18 @@ ca_key="${ca_base}.key"
 ca_crt="${ca_base}.crt"
 ca_cfg="${ca_base}.cfg"
 
-infile=""
-outfile=""
-cfgfile=""
+cat - << EOF > ${ca_cfg}
+organization = "MyRootCA"
+unit = "MyUnit"
+
+state = "Example"
+country = "JP"
+cn = "MyRootCA"
+expiration_days = 7300
+ca
+cert_signing_key
+crl_signing_key
+EOF
 
 usage() {
   cat - << EOS
@@ -26,38 +35,31 @@ EOS
 
 }
 
+all()
+{
+  key
+  sleep 3
+  crt
+}
+
 key()
 {
-  if [ -z "$outfile" ]; then
-    outfile="${ca_key}"
-  fi
-
   certtool \
     --generate-privkey \
     --sec-param High \
     --key-type=ecdsa \
-    --outfile ${outfile}
+    --outfile ${ca_key}
 }
 
 crt()
 {
-  if [ -z "$infile" ]; then
-    infile="${ca_key}"
-  fi
-
-  if [ -z "$outfile" ]; then
-    outfile="${ca_crt}"
-  fi
-  
-  if [ -z "$cfgfile" ]; then
-    cfgfile="${ca_cfg}"
-  fi
-
+  echo "INFO: generate cert..."
   certtool \
     --generate-self-signed \
-    --load-privkey ${infile} \
-    --template ${cfgfile} \
-    --outfile ${outfile}
+    --p12-name "My Root Certificate Authority" \
+    --load-privkey ${ca_key} \
+    --template ${ca_cfg} \
+    --outfile ${ca_crt}
 }
 
 info()
@@ -68,7 +70,7 @@ info()
 
 clean()
 {
-  rm -f ${ca_crt} ${ca_key}
+  rm -f ${ca_crt} ${ca_key} ${ca_cfg}
 }
 
 args=""
@@ -78,18 +80,6 @@ while [ "$#" -ne 0 ]; do
     -h | --help)
       usage
       exit 0
-      ;;
-    -c | --config)
-      shift
-      cfgfile=$1
-      ;;
-    -i | --input)
-      shift
-      infile=$1
-      ;;
-    -o | --output)
-      shift
-      outfile=$1
       ;;
     *)
       args="$args $1"
