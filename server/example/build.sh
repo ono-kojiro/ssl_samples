@@ -3,7 +3,7 @@
 top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 cd $top_dir
 
-server_name="myserver"
+server_name="example"
 server_base=`echo $server_name| tr '[:upper:]' '[:lower:]'`
 
 fqdn="${server_base}.example.com"
@@ -88,7 +88,8 @@ EOF
     --template generate.cfg \
     --outfile ${server_crt}
 
-  #rm -f generate.cfg
+  rm -f generate.cfg
+  rm -f ${server_crq}
 }
 
 crt_info()
