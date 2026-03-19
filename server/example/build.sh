@@ -3,6 +3,9 @@
 top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 cd $top_dir
 
+toplevel=`git rev-parse --show-toplevel`
+
+
 server_name="example"
 server_base=`echo $server_name| tr '[:upper:]' '[:lower:]'`
 
@@ -13,8 +16,8 @@ server_key="${server_base}.key"
 server_crq="${server_base}.crq"
 server_crt="${server_base}.crt"
 
-ca_crt="../../ca-gnutls/myrootca.crt"
-ca_key="../../ca-gnutls/myrootca.key"
+ca_crt="${toplevel}/ca-gnutls/myrootca.crt"
+ca_key="${toplevel}/ca-gnutls/myrootca.key"
 
 help() {
   cat - << EOS
