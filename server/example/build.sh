@@ -54,9 +54,6 @@ country = "JP"
 organization = "Example Organization"
 unit = "MyServerUnit"
 cn = "${ipaddr}"
-
-expiration_days = 3650
-
 tls_www_server
 EOF
 
@@ -81,6 +78,7 @@ dns_name = "${fqdn}"
 dns_name = "localhost"
 ip_address = "${ipaddr}"
 ip_address = "127.0.0.1"
+expiration_days = 3650
 EOF
 
   certtool \
