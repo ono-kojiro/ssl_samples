@@ -43,6 +43,7 @@ all()
 key()
 {
   certtool \
+    --no-text \
     --generate-privkey \
     --outfile ${server_key}
 }
