@@ -15,9 +15,10 @@ ipaddr="192.168.1.13"
 server_key="${server_base}.key"
 server_crq="${server_base}.crq"
 server_crt="${server_base}.crt"
+server_p12="${server_base}.p12"
 
-ca_crt="${toplevel}/ca-gnutls/myrootca.crt"
-ca_key="${toplevel}/ca-gnutls/myrootca.key"
+ca_crt="${toplevel}/ca-rsa/myrootca.crt"
+ca_key="${toplevel}/ca-rsa/myrootca.key"
 
 help() {
   cat - << EOS
@@ -55,6 +56,8 @@ country = "JP"
 organization = "Example Organization"
 unit = "MyServerUnit"
 cn = "${ipaddr}"
+signing_key
+encryption_key
 tls_www_server
 EOF
 
@@ -103,6 +106,16 @@ crt_info()
 show()
 {
   openssl x509 -noout -text -in ${server_crt} | tee output.txt
+}
+
+p12()
+{
+  openssl pkcs12 -export \
+    -in $server_crt \
+    -inkey $server_key \
+    -out $server_p12 \
+    -name $server_name \
+    -passout pass:changeit
 }
 
 clean()
