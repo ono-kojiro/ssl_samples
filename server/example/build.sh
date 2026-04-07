@@ -47,6 +47,7 @@ key()
     --no-text \
     --generate-privkey \
     --outfile ${server_key}
+  chmod 770 ${server_key}
 }
 
 req()
