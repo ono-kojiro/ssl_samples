@@ -11,19 +11,6 @@ ca_key="${ca_base}.key"
 ca_crt="${ca_base}.crt"
 ca_cfg="${ca_base}.cfg"
 
-cat - << EOF > ${ca_cfg}
-organization = "MyLocalCA"
-unit = "MyUnit"
-
-state = "Example"
-country = "JP"
-cn = "MyLocalCA"
-expiration_days = 7300
-ca
-cert_signing_key
-crl_signing_key
-EOF
-
 usage() {
   cat - << EOS
 usage : $0 <target>
@@ -31,6 +18,8 @@ usage : $0 <target>
   target:
     key
     crt
+
+    show
 EOS
 
 }
@@ -46,14 +35,27 @@ key()
   echo "INFO: generate private key..."
   certtool \
     --generate-privkey \
+    --no-text \
     --sec-param High \
     --key-type=ecdsa \
-    --no-text \
     --outfile ${ca_key}
 }
 
 crt()
 {
+  cat - << EOF > ${ca_cfg}
+organization = "MyLocalCA"
+unit = "MyUnit"
+
+state = "MyState"
+country = "JP"
+cn = "MyLocalCA"
+expiration_days = 7300
+ca
+cert_signing_key
+crl_signing_key
+EOF
+
   echo "INFO: generate cert..."
   certtool \
     --generate-self-signed \
@@ -69,6 +71,11 @@ info()
 {
   certtool \
     --certificate-info --infile ${ca_crt}
+}
+
+show()
+{
+  info
 }
 
 clean()
