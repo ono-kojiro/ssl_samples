@@ -5,7 +5,7 @@ cd $top_dir
 
 toplevel=`git rev-parse --show-toplevel`
 
-client_name="example"
+client_name="example-client"
 client_base=`echo ${client_name} | tr '[:upper:]' '[:lower:]'`
 
 client_key="${client_base}.key"
