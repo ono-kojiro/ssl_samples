@@ -40,7 +40,7 @@ key()
   certtool --generate-privkey \
     --no-text \
     --sec-param high \
-    --key-type ed25519 \
+    --key-type ecdsa \
     --outfile ${client_key}
 }
 
@@ -49,7 +49,7 @@ req()
   cat - << EOF > request.cfg
 organization = "Example Org"
 unit = "Client"
-cn = "filebeat"
+cn = "${client_name}"
 tls_www_client
 encryption_key
 signing_key
@@ -102,15 +102,11 @@ crt_info()
 
 p12()
 {
-  cat - << EOF > p12.cfg
-p12_name = "${client_name}"
-p12_password = "changeit"
-EOF
-
   certtool --to-p12 \
     --load-certificate ${client_crt} \
     --load-privkey ${client_key} \
-    --template p12.cfg \
+    --p12-name ${client_name} \
+    --password changeit \
     --outfile ${client_p12}
 }
 
