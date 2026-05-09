@@ -37,7 +37,7 @@ key()
     --generate-privkey \
     --no-text \
     --sec-param High \
-    --key-type=ed25519 \
+    --key-type ecdsa\
     --outfile ${ca_key}
 }
 
