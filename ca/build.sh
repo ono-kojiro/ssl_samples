@@ -3,23 +3,42 @@
 top_dir="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 cd $top_dir
 
-ca_name="MyLocalCA"
+ret=0
+
+if [ ! -e ".env" ]; then
+  echo "ERROR: no .env file"
+  ret=`expr $ret + 1`
+else
+  . ./.env
+fi
+
+if [ -z "$ca_name" ]; then
+  echo "ERROR: ca_name not defined"
+  ret=`expr $ret + 1`
+fi
+
+if [ "$ret" -ne 0 ]; then
+  exit $ret
+fi
+
+ca_name="MyRootCA"
 
 ca_base=`echo $ca_name | tr '[:upper:]' '[:lower:]'`
 
 ca_key="${ca_base}.key"
 ca_crt="${ca_base}.crt"
-ca_cfg="${ca_base}.cfg"
 
 usage() {
   cat - << EOS
 usage : $0 <target>
 
   target:
+    all (key / crt)
     key
     crt
 
-    show
+    info
+    clean / mclean
 EOS
 
 }
@@ -32,24 +51,29 @@ all()
 
 key()
 {
-  echo "INFO: generate private key..."
   certtool \
     --generate-privkey \
-    --no-text \
     --sec-param High \
-    --key-type ecdsa\
+    --key-type ${key_type} \
     --outfile ${ca_key}
+}
+
+debug()
+{
+  echo $tmpfile
 }
 
 crt()
 {
-  cat - << EOF > ${ca_cfg}
-organization = "MyLocalCA"
+  template=`mktemp` || exit
+
+  cat - << EOF > ${template}
+organization = "MyRootCA"
 unit = "MyUnit"
 
-state = "MyState"
+state = "Example"
 country = "JP"
-cn = "MyLocalCA"
+cn = "MyRootCA"
 expiration_days = 7300
 ca
 cert_signing_key
@@ -59,12 +83,12 @@ EOF
   echo "INFO: generate cert..."
   certtool \
     --generate-self-signed \
-    --p12-name "My Local Certificate Authority" \
+    --p12-name "My Root Certificate Authority" \
     --load-privkey ${ca_key} \
-    --template ${ca_cfg} \
+    --template ${template} \
     --outfile ${ca_crt}
 
-  rm -f ${ca_cfg}
+  rm -f ${template}
 }
 
 info()
@@ -73,14 +97,14 @@ info()
     --certificate-info --infile ${ca_crt}
 }
 
-show()
-{
-  info
-}
-
 clean()
 {
-  rm -f ${ca_crt} ${ca_key} ${ca_cfg}
+  :
+}
+
+mclean()
+{
+  rm -f ${ca_crt} ${ca_key}
 }
 
 args=""
